@@ -262,9 +262,30 @@ def report_json(ledger: "Ledger", by: str, top: Optional[int]) -> str:
 CSV_FIELDS = ["requests", "input_tokens", "output_tokens", "cache_read_tokens", "cache_write_5m_tokens", "cache_write_1h_tokens", "cost_usd", "unpriced_requests"]
 
 
+CSV_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def csv_safe(value: Any) -> Any:
+    if isinstance(value, str) and value.startswith(CSV_FORMULA_PREFIXES):
+        return "'" + value
+    return value
+
+
+class _SafeWriter:
+    def __init__(self, buffer: io.StringIO) -> None:
+        self._writer = csv.writer(buffer, lineterminator="\n")
+
+    def writerow(self, row: List[Any]) -> None:
+        self._writer.writerow([csv_safe(cell) for cell in row])
+
+    def writerows(self, rows: List[List[Any]]) -> None:
+        for row in rows:
+            self.writerow(row)
+
+
 def _csv(first: str, rows: List[List[Any]]) -> str:
     buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
+    writer = _SafeWriter(buffer)
     writer.writerow([first] + CSV_FIELDS)
     writer.writerows(rows)
     return buffer.getvalue()
@@ -367,7 +388,7 @@ def sessions_json(ledger: "Ledger", top: Optional[int]) -> str:
 
 def sessions_csv(ledger: "Ledger", top: Optional[int]) -> str:
     buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
+    writer = _SafeWriter(buffer)
     writer.writerow(["session", "project", "start", "duration_seconds", "models"] + CSV_FIELDS)
     for row in ledger.sessions(top):
         writer.writerow([row.session, row.project, _iso(row.start, ledger.tz) or "", int(row.duration.total_seconds()) if row.duration is not None else "", " ".join(m for m, _ in row.bucket.model_mix())] + _csv_cells(row.bucket))
@@ -390,7 +411,7 @@ def render_tips(ledger: "Ledger", tips: List["Tip"], style: Style, width: int = 
 
 def tips_csv(tips: List["Tip"]) -> str:
     buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
+    writer = _SafeWriter(buffer)
     writer.writerow(["key", "title", "saving_usd", "detail", "fix"])
     for tip in tips:
         writer.writerow([tip.key, tip.title, round(tip.saving, 6), tip.detail, tip.fix])
