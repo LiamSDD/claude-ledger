@@ -137,12 +137,16 @@ def _plural(n: int, word: str) -> str:
     return f"{n:,} {word}" if n == 1 else f"{n:,} {word}s"
 
 
-def header(ledger: "Ledger", style: Style) -> str:
-    title = style.bold("Claude Code usage")
+def _scope(ledger: "Ledger") -> str:
     scope = f"{_range_text(ledger)}, {_plural(ledger.sessions_count, 'session')}, {_plural(ledger.files, 'transcript file')}"
     if ledger.filters.project:
         scope += f", project {ledger.filters.project}"
-    return f"{title}  {style.dim(scope)}"
+    return scope
+
+
+def header(ledger: "Ledger", style: Style) -> str:
+    title = style.bold("Claude Code usage")
+    return f"{title}  {style.dim(_scope(ledger))}"
 
 
 def _unpriced_note(ledger: "Ledger") -> List[str]:
@@ -391,3 +395,115 @@ def tips_csv(tips: List["Tip"]) -> str:
     for tip in tips:
         writer.writerow([tip.key, tip.title, round(tip.saving, 6), tip.detail, tip.fix])
     return buffer.getvalue()
+
+
+MD_SPECIAL = re.compile(r"([\\|*_`<>\[\]])")
+
+
+def md_cell(text: str) -> str:
+    return MD_SPECIAL.sub(r"\\\1", " ".join(str(text).splitlines()))
+
+
+def md_table(headers: Sequence[str], rows: Sequence[Sequence[str]], aligns: Sequence[str], bold_last: bool = False) -> str:
+    def line(cells: Sequence[str]) -> str:
+        return "| " + " | ".join(cells) + " |"
+
+    out = [line([md_cell(h) for h in headers]), line(["---:" if a == "r" else ":---" for a in aligns])]
+    for index, row in enumerate(rows):
+        cells = [md_cell(c) for c in row]
+        if bold_last and index == len(rows) - 1:
+            cells = [f"**{c}**" if c else c for c in cells]
+        out.append(line(cells))
+    return "\n".join(out)
+
+
+def _md_list(pairs: Sequence[Sequence[str]]) -> List[str]:
+    return [f"- **{md_cell(label)}:** {md_cell(value)}" for label, value in pairs]
+
+
+def _md_header(ledger: "Ledger") -> List[str]:
+    return ["## Claude Code usage", "", md_cell(_scope(ledger))]
+
+
+def _md_unpriced(ledger: "Ledger") -> List[str]:
+    return [md_cell(line) for line in _unpriced_note(ledger)]
+
+
+def _md_summary(ledger: "Ledger") -> List[str]:
+    total = ledger.total
+    usage = total.usage
+    pairs = [
+        ("Estimated cost", cost_cell(total)),
+        ("Requests", f"{usage.requests:,}"),
+        ("Input tokens", tokens(usage.input)),
+        ("Output tokens", tokens(usage.output)),
+        ("Cache read", tokens(usage.cache_read)),
+        ("Cache write", f"{tokens(usage.cache_write)} ({tokens(usage.cache_write_5m)} 5m, {tokens(usage.cache_write_1h)} 1h)"),
+        ("Cache hit rate", pct(usage.cache_hit_rate)),
+    ]
+    for label, bucket in (("Main sessions", ledger.main), ("Subagents", ledger.subagent)):
+        share = bucket.cost / total.cost if total.cost else 0.0
+        pairs.append((label, f"{cost_cell(bucket)} ({pct(share)}, {_plural(bucket.usage.requests, 'request')})"))
+    return _md_list(pairs)
+
+
+def report_markdown(ledger: "Ledger", by: str, top: Optional[int]) -> str:
+    rows = ledger.breakdown(by)
+    limit = DEFAULT_TABLE_ROWS if top is None else top
+    shown = rows[:limit] if limit else rows
+    total_cost = ledger.total.cost
+    headers = [LABELS[by], "Requests", "Input", "Output", "Cache read", "Cache write", "Cost", "Share"]
+    aligns = ["l", "r", "r", "r", "r", "r", "r", "r"]
+    if by == "model":
+        headers.insert(1, "Priced as")
+        aligns.insert(1, "l")
+    body = []
+    for key, bucket in shown:
+        u = bucket.usage
+        share = pct(bucket.cost / total_cost) if total_cost and bucket.priced else "-"
+        cells = [_key_text(by, key), f"{u.requests:,}", tokens(u.input), tokens(u.output), tokens(u.cache_read), tokens(u.cache_write), cost_cell(bucket), share]
+        if by == "model":
+            cells.insert(1, ledger.prices.resolve(key) or "unknown")
+        body.append(cells)
+    lines = _md_header(ledger) + [""] + _md_summary(ledger)
+    lines += ["", f"### By {by}", "", md_table(headers, body, aligns)]
+    if len(shown) < len(rows):
+        lines += ["", md_cell(f"... {len(rows) - len(shown)} more (use --top 0 to show all)")]
+    lines += _md_unpriced(ledger)
+    return "\n".join(lines) + "\n"
+
+
+def daily_markdown(ledger: "Ledger") -> str:
+    days = ledger.daily()
+    body = []
+    for day, bucket in days:
+        u = bucket.usage
+        if u.requests:
+            body.append([day, f"{u.requests:,}", tokens(u.input + u.output + u.cache_read + u.cache_write), cost_cell(bucket)])
+        else:
+            body.append([day, "-", "-", "-"])
+    total = ledger.total
+    body.append(["Total", f"{total.usage.requests:,}", tokens(total.usage.input + total.usage.output + total.usage.cache_read + total.usage.cache_write), cost_cell(total)])
+    lines = _md_header(ledger) + ["", md_table(["Day", "Requests", "Tokens", "Cost"], body, ["l", "r", "r", "r"], bold_last=True)]
+    active = [b.cost for _, b in days if b.usage.requests]
+    if active:
+        pairs = [
+            ("Active days", f"{len(active):,}"),
+            ("Average per active day", money(sum(active) / len(active))),
+            ("Peak day", money(max(active))),
+        ]
+        lines += [""] + _md_list(pairs)
+    lines += _md_unpriced(ledger)
+    return "\n".join(lines) + "\n"
+
+
+def sessions_markdown(ledger: "Ledger", top: Optional[int]) -> str:
+    rows = ledger.sessions(top)
+    body = []
+    for row in rows:
+        start = f"{row.start.astimezone(ledger.tz):%Y-%m-%d %H:%M}" if row.start else "-"
+        body.append([row.session[:8], short_path(row.project, 36), start, duration_text(row.duration), model_mix_text(row.bucket), f"{row.bucket.usage.requests:,}", cost_cell(row.bucket)])
+    lines = _md_header(ledger) + ["", f"### Most expensive sessions (top {len(rows)} of {ledger.sessions_count})", ""]
+    lines.append(md_table(["Session", "Project", "Start", "Duration", "Models", "Requests", "Cost"], body, ["l", "l", "l", "r", "l", "r", "r"]))
+    lines += _md_unpriced(ledger)
+    return "\n".join(lines) + "\n"

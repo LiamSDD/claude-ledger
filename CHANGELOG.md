@@ -2,6 +2,12 @@
 
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- `--markdown` output for `report`, `daily` and `sessions`: a short heading, a totals list and GitHub-flavoured Markdown tables, ready to paste into a pull request, issue or chat. Mutually exclusive with `--json` and `--csv`.
+
 ## [0.1.0] - 2026-11-24
 
 ### Added
