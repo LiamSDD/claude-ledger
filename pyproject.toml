@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "claude-ledger"
-version = "0.1.0"
+version = "0.2.0"
 description = "See where your Claude Code tokens and dollars go. A zero-dependency CLI that reads your local Claude Code transcripts and breaks spend down by model, project, day, session and subagent."
 readme = "README.md"
 requires-python = ">=3.9"

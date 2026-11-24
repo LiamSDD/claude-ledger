@@ -7,7 +7,7 @@ A zero-dependency CLI that reads your local Claude Code transcripts and breaks s
 [![Python](https://img.shields.io/badge/python-3.9%2B-334155)](pyproject.toml)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-16a34a)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-334155)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-118%20passing-16a34a)](tests)
+[![Tests](https://img.shields.io/badge/tests-136%20passing-16a34a)](tests)
 
 ```text
 $ claude-ledger
