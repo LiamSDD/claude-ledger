@@ -11,6 +11,8 @@ USAGE_FIELDS = ("input", "output", "cache_read", "cache_write_5m", "cache_write_
 TIMESTAMP = re.compile(r"(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?\s*(Z|[+-]\d{2}:?\d{2})?$")
 MARKERS = (b'"usage"', b'"tool_result"', b"compact")
 LARGE_OUTPUT_CHARS = 20_000
+ESCAPES = re.compile(r"(?:\x1b\[|\x9b)[0-?]*[ -/]*[@-~]|(?:\x1b[\]PX^_]|[\x90\x98\x9d\x9e\x9f])[^\x07\x1b\x9c]*(?:\x07|\x1b\\|\x9c)?|\x1b[ -/]*[0-~]")
+CONTROLS = re.compile(r"[\x00-\x1f\x7f-\x9f]")
 
 
 @dataclass
@@ -70,6 +72,10 @@ class Thread:
     compacted: bool = False
     turns: List[Turn] = field(default_factory=list)
     outputs: List[ToolOutput] = field(default_factory=list)
+
+
+def clean_text(value: str) -> str:
+    return CONTROLS.sub("", ESCAPES.sub("", value))
 
 
 def projects_root() -> str:
@@ -164,7 +170,8 @@ def _agent_type(path: str) -> str:
     except (OSError, ValueError):
         return "subagent"
     kind = data.get("agentType") if isinstance(data, dict) else None
-    return kind if isinstance(kind, str) and kind else "subagent"
+    kind = clean_text(kind) if isinstance(kind, str) else ""
+    return kind or "subagent"
 
 
 def read_thread(path: str, root: str) -> Thread:
@@ -179,9 +186,9 @@ def read_thread(path: str, root: str) -> Thread:
         if entry.get("type") == "system" and entry.get("subtype") == "compact_boundary" or entry.get("isCompactSummary"):
             thread.compacted = True
         if not thread.session and isinstance(entry.get("sessionId"), str):
-            thread.session = entry["sessionId"]
+            thread.session = clean_text(entry["sessionId"])
         if not thread.project_label and isinstance(entry.get("cwd"), str):
-            thread.project_label = entry["cwd"]
+            thread.project_label = clean_text(entry["cwd"])
         message = entry.get("message")
         if not isinstance(message, dict):
             continue
@@ -194,8 +201,8 @@ def read_thread(path: str, root: str) -> Thread:
                     chars = _output_chars(block.get("content"))
                     if chars >= LARGE_OUTPUT_CHARS:
                         thread.outputs.append(ToolOutput(chars, len(turns), parse_timestamp(entry.get("timestamp"))))
-    thread.session = thread.session or stem
-    thread.project_label = thread.project_label or project
+    thread.session = thread.session or clean_text(stem)
+    thread.project_label = thread.project_label or clean_text(project)
     thread.turns = list(turns.values())
     return thread
 
@@ -219,8 +226,8 @@ def _add_turn(thread: Thread, turns: Dict[str, Turn], entry: Dict[str, Any], mes
         return
     sidechain = thread.subagent or bool(entry.get("isSidechain"))
     agent = thread.agent if thread.subagent else ("subagent" if sidechain else "main")
-    session = entry.get("sessionId") if isinstance(entry.get("sessionId"), str) else ""
-    turns[key] = Turn(key, str(model or "unknown"), parse_timestamp(entry.get("timestamp")), session, agent, sidechain, usage_from(raw), len(turns), tools)
+    session = clean_text(entry["sessionId"]) if isinstance(entry.get("sessionId"), str) else ""
+    turns[key] = Turn(key, clean_text(str(model or "unknown")) or "unknown", parse_timestamp(entry.get("timestamp")), session, agent, sidechain, usage_from(raw), len(turns), tools)
 
 
 def scan(root: str, since: Optional[datetime] = None) -> Iterator[Thread]:
