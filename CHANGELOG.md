@@ -4,9 +4,20 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-24
+
 ### Added
 
 - `--markdown` output for `report`, `daily` and `sessions`: a short heading, a totals list and GitHub-flavoured Markdown tables, ready to paste into a pull request, issue or chat. Mutually exclusive with `--json` and `--csv`.
+
+### Security
+
+- Control characters and terminal escape sequences in transcript values (model IDs, project paths, session IDs, agent types) are stripped when read, so a crafted transcript cannot inject escapes into terminal output.
+- CSV text cells starting with `=`, `+`, `-`, `@`, tab or carriage return are prefixed with an apostrophe, so exports cannot run spreadsheet formulas.
+
+### Added (repository)
+
+- Security policy with private vulnerability reporting, issue forms and a pull request template.
 
 ## [0.1.0] - 2026-11-24
 
