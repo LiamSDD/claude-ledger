@@ -1,0 +1,19 @@
+{
+  "currency": "USD",
+  "unit": "per million tokens",
+  "cache_write_5m_multiplier": 1.25,
+  "cache_write_1h_multiplier": 2.0,
+  "cache_read_multiplier": 0.1,
+  "models": {
+    "claude-fable-5-2": { "input": 8.0, "output": 40.0, "cache_read": 0.20 },
+    "claude-opus-5-5": { "input": 4.0, "output": 20.0, "cache_read": 0.20 },
+    "claude-sonnet-5-5": { "input": 2.0, "output": 10.0, "cache_read": 0.10 },
+    "claude-haiku-5-5": { "input": 0.10, "output": 0.50, "cache_read": 0.01 }
+  },
+  "families": {
+    "fable": "claude-fable-5-2",
+    "opus": "claude-opus-5-5",
+    "sonnet": "claude-sonnet-5-5",
+    "haiku": "claude-haiku-5-5"
+  }
+}

@@ -1,0 +1,132 @@
+$ claude-ledger report --dir tests/fixtures/projects --utc
+
+Claude Code usage  2026-11-01 to 2026-11-05, 4 sessions, 6 transcript files
+
+  Estimated cost  $1.54*
+  Requests        14
+  Input tokens    17.8k
+  Output tokens   14.6k
+  Cache read      810.0k
+  Cache write     220.0k  (216.0k 5m, 4.0k 1h)
+  Cache hit rate  77.3%
+
+  Main sessions   $1.42*       92.1%  10 requests
+  Subagents       $0.12         7.9%  4 requests
+
+By model
+Model                        Priced as           Requests   Input   Output   Cache read   Cache write      Cost   Share
+--------------------------   -----------------   --------   -----   ------   ----------   -----------   -------   -----
+claude-opus-4-7              claude-opus-5-5            4      40     4.5k       470.0k        200.0k     $1.18   76.9%
+claude-opus-5-5              claude-opus-5-5            5    7.3k     3.8k       160.0k         20.0k     $0.25   16.2%
+claude-fable-5-2             claude-fable-5-2           1     500      100       170.0k             0     $0.04    2.7%
+claude-sonnet-5-5-20261015   claude-sonnet-5-5          1    4.0k     3.0k            0             0     $0.04    2.5%
+claude-sonnet-5-5            claude-sonnet-5-5          1    3.0k     2.0k        10.0k             0     $0.03    1.8%
+claude-haiku-5-5-20261001    claude-haiku-5-5           1    2.0k      200            0             0   $0.0003    0.0%
+mystery-model-1              unknown                    1    1.0k     1.0k            0             0   unknown       -
+
+* Costs exclude 1 request on models with no known price: mystery-model-1. Add them with --prices FILE.
+
+$ claude-ledger report --by agent --dir tests/fixtures/projects --utc
+
+Claude Code usage  2026-11-01 to 2026-11-05, 4 sessions, 6 transcript files
+
+  Estimated cost  $1.54*
+  Requests        14
+  Input tokens    17.8k
+  Output tokens   14.6k
+  Cache read      810.0k
+  Cache write     220.0k  (216.0k 5m, 4.0k 1h)
+  Cache hit rate  77.3%
+
+  Main sessions   $1.42*       92.1%  10 requests
+  Subagents       $0.12         7.9%  4 requests
+
+By agent
+Agent      Requests   Input   Output   Cache read   Cache write     Cost   Share
+--------   --------   -----   ------   ----------   -----------   ------   -----
+main             10    6.8k    10.4k       750.0k        216.0k   $1.42*   92.1%
+Explore           2    6.0k     2.0k        50.0k          4.0k    $0.09    6.1%
+subagent          2    5.0k     2.2k        10.0k             0    $0.03    1.8%
+
+* Costs exclude 1 request on models with no known price: mystery-model-1. Add them with --prices FILE.
+
+$ claude-ledger report --by project --dir tests/fixtures/projects --utc
+
+Claude Code usage  2026-11-01 to 2026-11-05, 4 sessions, 6 transcript files
+
+  Estimated cost  $1.54*
+  Requests        14
+  Input tokens    17.8k
+  Output tokens   14.6k
+  Cache read      810.0k
+  Cache write     220.0k  (216.0k 5m, 4.0k 1h)
+  Cache hit rate  77.3%
+
+  Main sessions   $1.42*       92.1%  10 requests
+  Subagents       $0.12         7.9%  4 requests
+
+By project
+Project            Requests   Input   Output   Cache read   Cache write     Cost   Share
+----------------   --------   -----   ------   ----------   -----------   ------   -----
+/home/dev/api             5     540     4.6k       640.0k        200.0k    $1.23   79.6%
+/home/dev/webapp          9   17.3k    10.0k       170.0k         20.0k   $0.31*   20.4%
+
+* Costs exclude 1 request on models with no known price: mystery-model-1. Add them with --prices FILE.
+
+$ claude-ledger daily --since 2026-11-01 --until 2026-11-05 --dir tests/fixtures/projects --utc
+
+Claude Code usage  2026-11-01 to 2026-11-05, 4 sessions, 6 transcript files
+
+Day          Requests   Tokens     Cost   Spend
+----------   --------   ------   ------   --------------------------------
+2026-11-01          7   208.3k    $0.28   ██████████
+2026-11-02          -        -        -
+2026-11-03          2     9.0k   $0.04*   █▍
+2026-11-04          2   283.0k    $0.88   ████████████████████████████████
+2026-11-05          3   562.1k    $0.34   ████████████▍
+Total              14     1.1M   $1.54*
+
+  4 active day(s), average $0.39 per active day, peak $0.88
+
+* Costs exclude 1 request on models with no known price: mystery-model-1. Add them with --prices FILE.
+
+$ claude-ledger sessions --dir tests/fixtures/projects --utc
+
+Claude Code usage  2026-11-01 to 2026-11-05, 4 sessions, 6 transcript files
+
+Most expensive sessions (top 4 of 4)
+Session    Project            Start              Duration   Models                             Requests     Cost
+--------   ----------------   ----------------   --------   --------------------------------   --------   ------
+33333333   /home/dev/api      2026-11-04 22:00     4h 00m   opus-4-7 100%                             4    $1.18
+11111111   /home/dev/webapp   2026-11-01 09:00        30m   opus-5-5 90%, sonnet-5-5 10%, +1          7    $0.28
+44444444   /home/dev/api      2026-11-05 10:00        <1m   fable-5-2 100%                            1    $0.04
+22222222   /home/dev/webapp   2026-11-03 14:00        30m   sonnet-5-5 100%, mystery-model-1          2   $0.04*
+
+* Costs exclude 1 request on models with no known price: mystery-model-1. Add them with --prices FILE.
+
+$ claude-ledger tips --dir tests/fixtures/projects --utc
+
+Claude Code usage  2026-11-01 to 2026-11-05, 4 sessions, 6 transcript files
+
+Savings advice for $1.54* of spend, largest estimated impact first
+
+1. Long sessions without compaction  ~$0.05
+   1 session grew past 150k tokens of context without compacting (peak 200.0k). Every request
+   re-reads the whole context; the part above 100k cost $0.05 in cache reads alone.
+   Fix: Run /compact at natural breakpoints, /clear between unrelated tasks, and compact earlier
+        with CLAUDE_AUTOCOMPACT_PCT_OVERRIDE.
+
+2. Large tool outputs in context  ~$0.05
+   1 tool result over 20k characters (largest 40.0k chars) entered the context. Caching that
+   content and re-reading it on later requests cost about $0.05.
+   Fix: Search before reading (Grep, then Read with offset/limit), pipe noisy commands through
+        head or tail, and lower BASH_MAX_OUTPUT_LENGTH.
+
+3. Read-only subagents run on a premium model  ~$0.05
+   1 read-only subagent run (Explore) cost $0.09 on opus-5-5. The same tokens on sonnet-5-5
+   would cost $0.05.
+   Fix: Add `model: sonnet` (or `model: haiku`) to the frontmatter of exploration and research
+        agents in .claude/agents/, or set CLAUDE_CODE_SUBAGENT_MODEL.
+
+Impacts are estimates from list prices; they overlap and should not be summed exactly.
+
