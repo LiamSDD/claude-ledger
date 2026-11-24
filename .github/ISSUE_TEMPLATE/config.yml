@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and help
+    url: https://github.com/LiamSDD/claude-ledger/discussions/categories/q-a
+    about: Ask how to use claude-ledger or how to read its numbers in Discussions Q&A.
+  - name: Report a security vulnerability
+    url: https://github.com/LiamSDD/claude-ledger/security/advisories/new
+    about: Report vulnerabilities privately through GitHub private vulnerability reporting, not as a public issue.
