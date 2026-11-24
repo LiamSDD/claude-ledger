@@ -25,7 +25,9 @@ def test_version(capsys):
         main(["--version"])
     assert exc.value.code == 0
     assert __version__ in capsys.readouterr().out
-    assert __version__ == "0.1.0"
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, "pyproject.toml"), encoding="utf-8") as handle:
+        assert f'version = "{__version__}"' in handle.read()
 
 
 def test_default_command_is_report(capsys, fixtures_dir):
