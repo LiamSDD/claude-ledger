@@ -12,6 +12,7 @@ from .render import (
     Style,
     daily_csv,
     daily_json,
+    daily_markdown,
     dumps,
     render_daily,
     render_report,
@@ -19,8 +20,10 @@ from .render import (
     render_tips,
     report_csv,
     report_json,
+    report_markdown,
     sessions_csv,
     sessions_json,
+    sessions_markdown,
     supports_unicode,
     tips_csv,
     use_color,
@@ -44,6 +47,16 @@ def _non_negative(value: str) -> int:
     return number
 
 
+def _formats(markdown: bool) -> argparse.ArgumentParser:
+    parent = argparse.ArgumentParser(add_help=False)
+    fmt = parent.add_mutually_exclusive_group()
+    fmt.add_argument("--json", action="store_true", help="machine-readable JSON output")
+    fmt.add_argument("--csv", action="store_true", help="CSV output")
+    if markdown:
+        fmt.add_argument("--markdown", action="store_true", help="GitHub-flavoured Markdown tables for pull requests, issues and chat")
+    return parent
+
+
 def build_parser() -> argparse.ArgumentParser:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--dir", metavar="PATH", help="projects directory to read (default: $CLAUDE_CONFIG_DIR/projects or ~/.claude/projects)")
@@ -51,27 +64,25 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--project", metavar="PATH|NAME", help="only count one project, by path, folder name or directory name")
     common.add_argument("--until", metavar="WHEN", help="end of the window: 24h, 7d, today, YYYY-MM-DD (inclusive) or YYYY-MM-DDTHH:MM")
     common.add_argument("--utc", action="store_true", help="group days and show times in UTC instead of local time")
-    fmt = common.add_mutually_exclusive_group()
-    fmt.add_argument("--json", action="store_true", help="machine-readable JSON output")
-    fmt.add_argument("--csv", action="store_true", help="CSV output")
+    tables = [common, _formats(True)]
 
     parser = argparse.ArgumentParser(prog="claude-ledger", description=TAGLINE + " Reads local Claude Code transcripts; never sends anything anywhere.")
     parser.add_argument("--version", action="version", version=f"claude-ledger {__version__}")
     sub = parser.add_subparsers(dest="command", metavar="COMMAND")
 
-    report = sub.add_parser("report", parents=[common], help="totals plus a breakdown table (default command)")
+    report = sub.add_parser("report", parents=tables, help="totals plus a breakdown table (default command)")
     report.add_argument("--since", metavar="WHEN", help="start of the window: 24h, 7d, 30d, today or YYYY-MM-DD")
     report.add_argument("--by", choices=DIMENSIONS, default="model", help="breakdown dimension (default: model)")
     report.add_argument("--top", type=_non_negative, metavar="N", help="limit the breakdown to N rows (0 = all; tables default to 20)")
 
-    daily = sub.add_parser("daily", parents=[common], help="one row per day with a bar chart of spend")
+    daily = sub.add_parser("daily", parents=tables, help="one row per day with a bar chart of spend")
     daily.add_argument("--since", metavar="WHEN", default="30d", help="start of the window (default: 30d)")
 
-    sessions = sub.add_parser("sessions", parents=[common], help="most expensive sessions")
+    sessions = sub.add_parser("sessions", parents=tables, help="most expensive sessions")
     sessions.add_argument("--since", metavar="WHEN", help="start of the window")
     sessions.add_argument("--top", type=_non_negative, metavar="N", default=10, help="number of sessions (default: 10, 0 = all)")
 
-    tips = sub.add_parser("tips", parents=[common], help="savings advice backed by your numbers")
+    tips = sub.add_parser("tips", parents=[common, _formats(False)], help="savings advice backed by your numbers")
     tips.add_argument("--since", metavar="WHEN", help="start of the window")
     return parser
 
@@ -109,6 +120,12 @@ def _filters(args: argparse.Namespace, parser: argparse.ArgumentParser, now: dat
 
 
 def _output(args: argparse.Namespace, ledger: Ledger, style: Style, unicode: bool) -> str:
+    if getattr(args, "markdown", False):
+        if args.command == "daily":
+            return daily_markdown(ledger)
+        if args.command == "sessions":
+            return sessions_markdown(ledger, args.top or None)
+        return report_markdown(ledger, args.by, args.top)
     if args.command == "daily":
         return daily_json(ledger) if args.json else daily_csv(ledger) if args.csv else render_daily(ledger, style, unicode)
     if args.command == "sessions":

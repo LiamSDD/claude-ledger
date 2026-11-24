@@ -7,7 +7,7 @@ A zero-dependency CLI that reads your local Claude Code transcripts and breaks s
 [![Python](https://img.shields.io/badge/python-3.9%2B-334155)](pyproject.toml)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-16a34a)](pyproject.toml)
 [![License](https://img.shields.io/badge/license-MIT-334155)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-109%20passing-16a34a)](tests)
+[![Tests](https://img.shields.io/badge/tests-118%20passing-16a34a)](tests)
 
 ```text
 $ claude-ledger
@@ -94,6 +94,7 @@ Both install a `claude-ledger` command. `python -m claude_ledger` works as well.
 | `--prices FILE` | Override or extend the bundled price table (see below) |
 | `--utc` | Group days and show times in UTC instead of local time |
 | `--json` / `--csv` | Machine-readable output instead of tables |
+| `--markdown` | GitHub-flavoured Markdown tables for pull requests, issues and chat (`report`, `daily` and `sessions`) |
 | `--version` | Print the version |
 
 By default transcripts are read from `~/.claude/projects`, or from `$CLAUDE_CONFIG_DIR/projects` when `CLAUDE_CONFIG_DIR` is set. Subfolders are scanned recursively, so subagent transcripts are included.
@@ -101,7 +102,7 @@ By default transcripts are read from `~/.claude/projects`, or from `$CLAUDE_CONF
 ### report
 
 ```bash
-claude-ledger report [--since 7d] [--until ...] [--project PATH|NAME] [--by model|project|day|session|agent] [--top N] [--json|--csv]
+claude-ledger report [--since 7d] [--until ...] [--project PATH|NAME] [--by model|project|day|session|agent] [--top N] [--json|--csv|--markdown]
 ```
 
 Totals (requests, input, output, cache read, cache write and estimated cost), the cache hit rate, the split between main sessions and subagents, and one breakdown table:
@@ -117,7 +118,7 @@ Tables show the top 20 rows by default; `--top N` changes that and `--top 0` sho
 ### daily
 
 ```bash
-claude-ledger daily [--since 30d]
+claude-ledger daily [--since 30d] [--json|--csv|--markdown]
 ```
 
 One row per day, including days with no usage, with a bar chart of spend:
@@ -140,7 +141,7 @@ Total              14     1.1M   $1.54*
 ### sessions
 
 ```bash
-claude-ledger sessions [--top 10]
+claude-ledger sessions [--top 10] [--json|--csv|--markdown]
 ```
 
 The most expensive sessions with project, start time, duration, model mix (share of the session's cost per model) and cost.
@@ -169,6 +170,27 @@ Tables use colour only when stdout is a terminal and `NO_COLOR` is not set; pipe
 ```bash
 claude-ledger --since 30d --by project --csv > spend.csv
 claude-ledger --json | jq '.totals.cost_usd'
+```
+
+`--markdown` (for `report`, `daily` and `sessions`) prints a short heading, the totals as a bullet list and the table as GitHub-flavoured Markdown, ready to paste into a pull request, issue or chat message. It is mutually exclusive with `--json` and `--csv`, and follows the same row limits as the plain tables. Markdown control characters in values are escaped, and `daily` leaves out the bar chart.
+
+```bash
+claude-ledger sessions --top 2 --markdown | pbcopy
+```
+
+```markdown
+## Claude Code usage
+
+2026-11-01 to 2026-11-05, 4 sessions, 6 transcript files
+
+### Most expensive sessions (top 2 of 4)
+
+| Session | Project | Start | Duration | Models | Requests | Cost |
+| :--- | :--- | :--- | ---: | :--- | ---: | ---: |
+| 33333333 | /home/dev/api | 2026-11-04 22:00 | 4h 00m | opus-4-7 100% | 4 | $1.18 |
+| 11111111 | /home/dev/webapp | 2026-11-01 09:00 | 30m | opus-5-5 90%, sonnet-5-5 10%, +1 | 7 | $0.28 |
+
+\* Costs exclude 1 request on models with no known price: mystery-model-1. Add them with --prices FILE.
 ```
 
 ## How costs are computed
