@@ -4,8 +4,8 @@
 
 | Version | Supported |
 | --- | --- |
-| 0.1.x | Yes |
-| Older | No |
+| 0.2.x | Yes |
+| 0.1.x and older | No |
 
 Fixes are released as a new patch version of the latest supported line.
 
