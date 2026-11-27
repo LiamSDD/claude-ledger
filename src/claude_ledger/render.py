@@ -137,16 +137,16 @@ def _plural(n: int, word: str) -> str:
     return f"{n:,} {word}" if n == 1 else f"{n:,} {word}s"
 
 
-def _scope(ledger: "Ledger") -> str:
-    scope = f"{_range_text(ledger)}, {_plural(ledger.sessions_count, 'session')}, {_plural(ledger.files, 'transcript file')}"
+def _scope(ledger: "Ledger", date_range: Optional[str] = None) -> str:
+    scope = f"{date_range or _range_text(ledger)}, {_plural(ledger.sessions_count, 'session')}, {_plural(ledger.files, 'transcript file')}"
     if ledger.filters.project:
         scope += f", project {ledger.filters.project}"
     return scope
 
 
-def header(ledger: "Ledger", style: Style) -> str:
+def header(ledger: "Ledger", style: Style, date_range: Optional[str] = None) -> str:
     title = style.bold("Claude Code usage")
-    return f"{title}  {style.dim(_scope(ledger))}"
+    return f"{title}  {style.dim(_scope(ledger, date_range))}"
 
 
 def _unpriced_note(ledger: "Ledger") -> List[str]:
@@ -312,7 +312,8 @@ def render_daily(ledger: "Ledger", style: Style, unicode: bool = True, width: in
         body.append([day, f"{u.requests:,}" if u.requests else "-", tokens(u.input + u.output + u.cache_read + u.cache_write) if u.requests else "-", cost_text, style.accent(bar(bucket.cost, peak, width, unicode))])
     total = ledger.total
     body.append(["Total", f"{total.usage.requests:,}", tokens(total.usage.input + total.usage.output + total.usage.cache_read + total.usage.cache_write), cost_cell(total), ""])
-    lines = [header(ledger, style), "", table(["Day", "Requests", "Tokens", "Cost", "Spend"], body, ["l", "r", "r", "r", "l"], style, bold_last=True)]
+    date_range = f"{days[0][0]} to {days[-1][0]}" if days else None
+    lines = [header(ledger, style, date_range), "", table(["Day", "Requests", "Tokens", "Cost", "Spend"], body, ["l", "r", "r", "r", "l"], style, bold_last=True)]
     active = [b.cost for _, b in days if b.usage.requests]
     if active:
         lines += ["", style.dim(f"  {len(active)} active day(s), average {money(sum(active) / len(active))} per active day, peak {money(peak)}")]
@@ -442,8 +443,8 @@ def _md_list(pairs: Sequence[Sequence[str]]) -> List[str]:
     return [f"- **{md_cell(label)}:** {md_cell(value)}" for label, value in pairs]
 
 
-def _md_header(ledger: "Ledger") -> List[str]:
-    return ["## Claude Code usage", "", md_cell(_scope(ledger))]
+def _md_header(ledger: "Ledger", date_range: Optional[str] = None) -> List[str]:
+    return ["## Claude Code usage", "", md_cell(_scope(ledger, date_range))]
 
 
 def _md_unpriced(ledger: "Ledger") -> List[str]:
@@ -505,7 +506,8 @@ def daily_markdown(ledger: "Ledger") -> str:
             body.append([day, "-", "-", "-"])
     total = ledger.total
     body.append(["Total", f"{total.usage.requests:,}", tokens(total.usage.input + total.usage.output + total.usage.cache_read + total.usage.cache_write), cost_cell(total)])
-    lines = _md_header(ledger) + ["", md_table(["Day", "Requests", "Tokens", "Cost"], body, ["l", "r", "r", "r"], bold_last=True)]
+    date_range = f"{days[0][0]} to {days[-1][0]}" if days else None
+    lines = _md_header(ledger, date_range) + ["", md_table(["Day", "Requests", "Tokens", "Cost"], body, ["l", "r", "r", "r"], bold_last=True)]
     active = [b.cost for _, b in days if b.usage.requests]
     if active:
         pairs = [

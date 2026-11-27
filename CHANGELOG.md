@@ -4,6 +4,10 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- Match daily terminal and Markdown header dates to the displayed rows, including windows extending past the last day of usage.
+
 ## [0.2.0] - 2026-11-24
 
 ### Added
