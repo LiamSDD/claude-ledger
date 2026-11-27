@@ -1,4 +1,12 @@
 import io
+from datetime import datetime, timedelta, timezone
+
+import pytest
+
+from claude_ledger.pricing import load_prices
+from claude_ledger.report import Filters, build_ledger
+from claude_ledger.transcripts import scan
+from claude_ledger.render import daily_markdown, header, render_daily
 
 from claude_ledger.render import bar, money, pct, short_model, table, tokens, use_color, Style
 
@@ -60,3 +68,25 @@ def test_use_color_rules():
     assert use_color(FakeTTY(), {}) is True
     assert use_color(FakeTTY(), {"NO_COLOR": "1"}) is False
     assert use_color(io.StringIO(), {}) is False
+
+
+@pytest.mark.parametrize("tz", [timezone.utc, timezone(timedelta(hours=5, minutes=30))])
+@pytest.mark.parametrize("since,until", [(None, None), ("2026-11-01", None), (None, "2026-11-10"), ("2026-11-01", "2026-11-10")])
+def test_daily_header_matches_displayed_days(fixtures_dir, tz, since, until):
+    filters = Filters(
+        since=datetime.fromisoformat(since).replace(tzinfo=tz) if since else None,
+        until=datetime.fromisoformat(until).replace(tzinfo=tz) if until else None,
+    )
+    ledger = build_ledger(scan(fixtures_dir), load_prices(), filters, tz, datetime(2026, 11, 27, 22, tzinfo=timezone.utc))
+    days = ledger.daily()
+    expected = f"{days[0][0]} to {days[-1][0]}"
+    assert expected in render_daily(ledger, Style(False)).splitlines()[0]
+    assert expected in daily_markdown(ledger).splitlines()[2]
+    if since and not until:
+        assert "to 2026-11-05" in header(ledger, Style(False))
+
+
+def test_daily_header_handles_empty_ledger():
+    ledger = build_ledger([], load_prices(), tz=timezone.utc)
+    assert "all time" in render_daily(ledger, Style(False)).splitlines()[0]
+    assert "all time" in daily_markdown(ledger).splitlines()[2]
