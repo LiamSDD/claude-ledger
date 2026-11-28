@@ -30,6 +30,30 @@ def test_version(capsys):
         assert f'version = "{__version__}"' in handle.read()
 
 
+@pytest.mark.parametrize("command", ["report", "daily", "sessions", "tips"])
+def test_date_window_help(command, capsys, monkeypatch):
+    monkeypatch.setenv("COLUMNS", "200")
+    with pytest.raises(SystemExit) as exc:
+        main([command, "--help"])
+    assert exc.value.code == 0
+    out, err = capsys.readouterr()
+    assert not err
+
+    options = {" ".join(option.split()) for option in out.split("\n  --")[1:]}
+    since = next(option for option in options if option.startswith("since WHEN "))
+    until = next(option for option in options if option.startswith("until WHEN "))
+    formats = (
+        "24h", "7d", "30d", "4w", "today", "YYYY-MM-DD,", "YYYY-MM-DDTHH:MM,",
+        "YYYY-MM-DDTHH:MM:SS", "YYYY-MM-DD HH:MM",
+    )
+    for value in formats:
+        assert value in since
+        assert value in until
+    assert ("default: 30d" in since) == (command == "daily")
+    assert "exclusive end" in until
+    assert "24 hours after the selected day starts" in until
+
+
 def test_default_command_is_report(capsys, fixtures_dir):
     code, out, _ = run(capsys, "--dir", fixtures_dir, "--utc")
     assert code == 0

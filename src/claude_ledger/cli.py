@@ -35,6 +35,15 @@ from .transcripts import projects_root, scan
 COMMANDS = ("report", "daily", "sessions", "tips")
 VALUE_OPTIONS = {"--dir", "--prices", "--since", "--until", "--project", "--by", "--top"}
 TAGLINE = "See where your Claude Code tokens and dollars go."
+WHEN_FORMATS = (
+    "24h, 7d, 30d, 4w, today, YYYY-MM-DD, YYYY-MM-DDTHH:MM, "
+    "YYYY-MM-DDTHH:MM:SS or 'YYYY-MM-DD HH:MM'"
+)
+SINCE_HELP = f"start of the window: {WHEN_FORMATS}"
+UNTIL_HELP = (
+    f"exclusive end of the window: {WHEN_FORMATS}. "
+    "For today and plain dates, the window ends 24 hours after the selected day starts."
+)
 
 
 def _non_negative(value: str) -> int:
@@ -62,7 +71,7 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--dir", metavar="PATH", help="projects directory to read (default: $CLAUDE_CONFIG_DIR/projects or ~/.claude/projects)")
     common.add_argument("--prices", metavar="FILE", help="JSON price table that overrides or extends the bundled one")
     common.add_argument("--project", metavar="PATH|NAME", help="only count one project, by path, folder name or directory name")
-    common.add_argument("--until", metavar="WHEN", help="end of the window: 24h, 7d, today, YYYY-MM-DD (inclusive) or YYYY-MM-DDTHH:MM")
+    common.add_argument("--until", metavar="WHEN", help=UNTIL_HELP)
     common.add_argument("--utc", action="store_true", help="group days and show times in UTC instead of local time")
     tables = [common, _formats(True)]
 
@@ -71,19 +80,19 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", metavar="COMMAND")
 
     report = sub.add_parser("report", parents=tables, help="totals plus a breakdown table (default command)")
-    report.add_argument("--since", metavar="WHEN", help="start of the window: 24h, 7d, 30d, today or YYYY-MM-DD")
+    report.add_argument("--since", metavar="WHEN", help=SINCE_HELP)
     report.add_argument("--by", choices=DIMENSIONS, default="model", help="breakdown dimension (default: model)")
     report.add_argument("--top", type=_non_negative, metavar="N", help="limit the breakdown to N rows (0 = all; tables default to 20)")
 
     daily = sub.add_parser("daily", parents=tables, help="one row per day with a bar chart of spend")
-    daily.add_argument("--since", metavar="WHEN", default="30d", help="start of the window (default: 30d)")
+    daily.add_argument("--since", metavar="WHEN", default="30d", help=SINCE_HELP + " (default: %(default)s)")
 
     sessions = sub.add_parser("sessions", parents=tables, help="most expensive sessions")
-    sessions.add_argument("--since", metavar="WHEN", help="start of the window")
+    sessions.add_argument("--since", metavar="WHEN", help=SINCE_HELP)
     sessions.add_argument("--top", type=_non_negative, metavar="N", default=10, help="number of sessions (default: 10, 0 = all)")
 
     tips = sub.add_parser("tips", parents=[common, _formats(False)], help="savings advice backed by your numbers")
-    tips.add_argument("--since", metavar="WHEN", help="start of the window")
+    tips.add_argument("--since", metavar="WHEN", help=SINCE_HELP)
     return parser
 
 

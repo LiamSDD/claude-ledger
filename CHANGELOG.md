@@ -7,6 +7,7 @@ All notable changes to this project are documented here. The format follows [Kee
 ### Fixed
 
 - Match daily terminal and Markdown header dates to the displayed rows, including windows extending past the last day of usage.
+- List all supported `--since` and `--until` formats in the CLI help and README.
 
 ## [0.2.0] - 2026-11-24
 
