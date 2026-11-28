@@ -128,7 +128,10 @@ def test_parse_when_durations_and_dates():
     assert parse_when("2026-11-01", NOW, UTC) == datetime(2026, 11, 1, tzinfo=UTC)
     assert parse_when("2026-11-01", NOW, UTC, end=True) == datetime(2026, 11, 2, tzinfo=UTC)
     assert parse_when("2026-11-01T10:30", NOW, UTC) == datetime(2026, 11, 1, 10, 30, tzinfo=UTC)
+    assert parse_when("2026-11-01T10:30:15", NOW, UTC) == datetime(2026, 11, 1, 10, 30, 15, tzinfo=UTC)
+    assert parse_when("2026-11-01 10:30", NOW, UTC) == datetime(2026, 11, 1, 10, 30, tzinfo=UTC)
     assert parse_when("today", NOW, UTC) == datetime(2026, 11, 24, tzinfo=UTC)
+    assert parse_when("today", NOW, UTC, end=True) == datetime(2026, 11, 25, tzinfo=UTC)
 
 
 def test_parse_when_honours_timezone():

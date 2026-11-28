@@ -4,7 +4,7 @@
 
 <a href="https://github.com/LiamSDD/LiamSDD/blob/main/assets/demos/claude-ledger-demo.mp4"><img src="https://raw.githubusercontent.com/LiamSDD/LiamSDD/main/assets/demos/claude-ledger-loop.gif" alt="claude-ledger demo: savings tips with their dollar impact, from sample transcripts" width="100%"></a>
 
-[![Python](https://img.shields.io/badge/python-3.9%2B-334155)](pyproject.toml) [![Dependencies](https://img.shields.io/badge/dependencies-0-16a34a)](pyproject.toml) [![License](https://img.shields.io/badge/license-MIT-334155)](LICENSE) [![Tests](https://img.shields.io/badge/tests-145%20passing-16a34a)](tests)
+[![Python](https://img.shields.io/badge/python-3.9%2B-334155)](pyproject.toml) [![Dependencies](https://img.shields.io/badge/dependencies-0-16a34a)](pyproject.toml) [![License](https://img.shields.io/badge/license-MIT-334155)](LICENSE) [![Tests](https://img.shields.io/badge/tests-149%20passing-16a34a)](tests)
 
 ## Why
 
@@ -83,8 +83,8 @@ Tables show the top 20 rows; `--top N` changes that and `--top 0` shows everythi
 
 | Option | Meaning |
 | --- | --- |
-| `--since WHEN` | Start of the window: `24h`, `7d`, `30d`, `4w`, `today`, `YYYY-MM-DD` or `YYYY-MM-DDTHH:MM` |
-| `--until WHEN` | End of the window, same formats; a plain date includes that whole day |
+| `--since WHEN` | Start of the window: `24h`, `7d`, `30d`, `4w`, `today`, `YYYY-MM-DD`, `YYYY-MM-DDTHH:MM`, `YYYY-MM-DDTHH:MM:SS` or `'YYYY-MM-DD HH:MM'`. Defaults to `30d` for `daily`. |
+| `--until WHEN` | Exclusive end of the window, with the same formats as `--since` |
 | `--project PATH\|NAME` | Only one project: its path (`~/code/api`), its folder name (`api`) or its encoded directory name |
 | `--dir PATH` | Read another projects directory instead of the default |
 | `--prices FILE` | Override or extend the bundled price table (see below) |
@@ -92,6 +92,8 @@ Tables show the top 20 rows; `--top N` changes that and `--top 0` shows everythi
 | `--json` / `--csv` | Machine-readable output instead of tables |
 | `--markdown` | GitHub-flavoured Markdown tables for pull requests, issues and chat (`report`, `daily` and `sessions`) |
 | `--version` | Print the version |
+
+Dates and timestamps use local time by default and UTC with `--utc`. For `today` and plain dates, `--since` starts at midnight and `--until` ends 24 hours after the selected day starts. For timestamps and relative durations, each option uses the specified time or the computed instant directly. The start is inclusive and the end is exclusive. If omitted, `--until` leaves the window open-ended.
 
 Transcripts are read from `~/.claude/projects`, or `$CLAUDE_CONFIG_DIR/projects` when `CLAUDE_CONFIG_DIR` is set. Subfolders are scanned, so subagent transcripts are included.
 
